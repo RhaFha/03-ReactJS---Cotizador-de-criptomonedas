@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import ImagenCripto from '../public/img/imagen-criptos.png';
 import Formulario from './components/Formulario';
+import Resultado from './components/Resultado';
+import Spinner from './components/Spinner';
 
 const Heading = styled.h1`
   font-family: 'Lato', sans-serif;
@@ -41,6 +44,27 @@ const Imagen = styled.img`
 
 function App() {
 
+  const [monedas, setMonedas] = useState<{} | MonedasType>({moneda: '', criptoMoneda: ''});
+  const [ resultado, setResultado] = useState({});
+  const [ cargando, setCargando] = useState(false);
+
+  useEffect( () => {
+    //if(Object.keys(monedas).length > 0 ){
+    const {moneda, criptoMoneda} = monedas
+    if( ![moneda, criptoMoneda].includes('') ){
+      setCargando(true);
+      const cotizarCripto = async () => {
+        const url = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${criptoMoneda}&tsyms=${moneda}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        setResultado(json.DISPLAY[criptoMoneda][moneda]);
+        setCargando(false);
+      }
+      cotizarCripto();
+      
+    }
+  },[monedas])
+
   return (
     <Contenedor>
       <Imagen 
@@ -49,11 +73,21 @@ function App() {
       />
       <div>
         <Heading>Cotiza Criptomonedas al Instante</Heading>
-        <Formulario />
+        <Formulario setMonedas={setMonedas} />
+        {
+          cargando && <Spinner />
+        }
+      {
+        !cargando && resultado.PRICE && <Resultado resultado={resultado} />
+      }
       </div>
-      
     </Contenedor>
   )
 }
 
 export default App
+
+export type MonedasType = {
+  moneda: string;
+  criptoMoneda: string;
+}
